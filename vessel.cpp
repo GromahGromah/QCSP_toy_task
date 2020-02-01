@@ -7,6 +7,20 @@ bool Crane::operator < (const Crane &rhs) const {
 	return init_pos < rhs.init_pos;
 }
 
+Vessel::Vessel() {
+}
+
+Vessel::Vessel(const std::string &filename) {
+	Load(filename);
+}
+
+int Vessel::GetTotalTEU() const {
+	int ret = 0;
+	for (int teu : teus_per_bay)
+		ret += teu;
+	return ret;
+}
+
 void Vessel::Load(const std::string &filename) {
 	FILE *fin = fopen(filename.c_str(), "r");
 	assert(fin != NULL);
