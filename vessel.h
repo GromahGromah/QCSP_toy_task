@@ -5,18 +5,17 @@
 	
 struct Crane {
 	double teu_per_h;
-	double bg_time;
-	double ed_time;
-	int bay_pos;
-	bool operator < (const Crane &rhs) const {
-		return bay_pos < rhs.bay_pos;
-	}
+	int init_pos;
+	bool operator < (const Crane &rhs) const;
 };
 
 struct Vessel {
 	int bays;
+	int crane_min_dist;
+	std::vector<double> move_time_between_bay;
 	std::vector<int> teus_per_bay;
 	std::vector<Crane> cranes;
 };
 
 #endif /* VESSEL_H */
+
