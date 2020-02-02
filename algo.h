@@ -4,6 +4,9 @@
 #include "vessel.h"
 
 struct DPConfig {
+	static constexpr int kMaxCraneCount = 25;
+	static constexpr int kMaxBatchCount = 400;
+	static constexpr int kMannerCount = 4;
 	int batch_size;
 	int thread_count;
 	DPConfig();

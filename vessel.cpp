@@ -3,10 +3,6 @@
 #include <cassert>
 #include <algorithm>
 
-bool Crane::operator < (const Crane &rhs) const {
-	return init_pos < rhs.init_pos;
-}
-
 Vessel::Vessel() {
 }
 

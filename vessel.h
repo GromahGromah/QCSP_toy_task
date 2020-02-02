@@ -7,7 +7,6 @@
 struct Crane {
 	double teu_per_h;
 	int init_pos;
-	bool operator < (const Crane &rhs) const;
 };
 
 struct Vessel {
