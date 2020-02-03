@@ -37,6 +37,9 @@ struct Action {
 		Moving
 	};
 	
+	static Action Work(int pos, int teu, double bgt, double edt);
+	static Action Move(int stb, int edb, double bgt, double edt);
+	static int CraneMinDist(const Action &lhs, const Action &rhs);
 	ActionType type;
 	WorkingDetail w_detail;
 	MovingDetail m_detail;
@@ -46,10 +49,14 @@ struct Action {
 
 struct WorkingSequence {
 	std::vector<Action> actions;
+	Action &operator [](int id);
+	void MergeMovingActions();
+	void RemoveMovingActions();
 };
 
 struct CraneWorkingPlan {
 	std::vector<WorkingSequence> crane_seqs;
+	WorkingSequence &operator [](int id);
 };
 
 #endif /* VESSEL_H */
