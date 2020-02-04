@@ -7,6 +7,7 @@
 int main()
 {
 	Vessel vessel("vessel_instances/shanghai.vessel");
-	
+	CraneWorkingPlan plan = DPSolve(vessel).GetMergeMovingActions();
+	plan.Print();
 	return 0;
 }

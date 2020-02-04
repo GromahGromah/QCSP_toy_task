@@ -45,18 +45,25 @@ struct Action {
 	MovingDetail m_detail;
 	double bg_time;
 	double ed_time;
+	void Print(FILE * fout = stderr) const;
 };
 
 struct WorkingSequence {
 	std::vector<Action> actions;
 	Action &operator [](int id);
-	void MergeMovingActions();
-	void RemoveMovingActions();
+	const Action &operator [](int id) const;
+	WorkingSequence GetMergeMovingActions() const;
+	WorkingSequence GetRemoveMovingActions() const;
+	void Print(FILE * fout = stderr) const;
 };
 
 struct CraneWorkingPlan {
 	std::vector<WorkingSequence> crane_seqs;
 	WorkingSequence &operator [](int id);
+	const WorkingSequence &operator [](int id) const;
+	CraneWorkingPlan GetMergeMovingActions() const;
+	CraneWorkingPlan GetRemoveMovingActions() const;
+	void Print(FILE * fout = stderr) const;
 };
 
 #endif /* VESSEL_H */

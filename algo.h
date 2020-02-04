@@ -13,6 +13,6 @@ struct DPConfig {
 	DPConfig(int batch_size, int thread_count);
 };
 
-CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config);
+CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config = DPConfig());
 
 #endif /* ALGO_H */

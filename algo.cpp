@@ -8,7 +8,6 @@
 
 #define T_STATIC thread_local static
 #define INF 1e30
-using Pii = std::pair<int, int>;
 
 DPConfig::DPConfig()
 	: DPConfig(10, 1) {
@@ -59,9 +58,9 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 	for (double move_time : vessel.move_time_between_bay)
 		prefix_move_time.push_back(prefix_move_time.back() + move_time);
 	
-	T_STATIC double Dp[DPConfig::kMaxCraneCount][DPConfig::kMannerCount][DPConfig::kMaxBatchCount][DPConfig::kMaxBatchCount];
-	T_STATIC Pii Fa[DPConfig::kMaxCraneCount][DPConfig::kMannerCount][DPConfig::kMaxBatchCount][DPConfig::kMaxBatchCount];
 	/* Solve */
+	T_STATIC double Dp[DPConfig::kMaxCraneCount][DPConfig::kMannerCount][DPConfig::kMaxBatchCount][DPConfig::kMaxBatchCount];
+	T_STATIC std::pair<int, int> Fa[DPConfig::kMaxCraneCount][DPConfig::kMannerCount][DPConfig::kMaxBatchCount][DPConfig::kMaxBatchCount];
 	struct Index {
 		int crane, manner, l, r;
 		Index(int crane, int manner, int l, int r)
@@ -109,7 +108,8 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 	auto GetDetailedPlan = [&](const Index &index) -> WorkingSequence {
 		/* Return Null Plan if Illegal */
 		WorkingSequence ret;
-		int l_bay = batch_pos[index.l], r_bay = batch_pos[index.r], c_bay = vessel.cranes[index.crane].init_pos;
+		int l_bay = batch_pos[index.l], r_bay = batch_pos[index.r];
+		int c_bay = vessel.cranes[index.crane].init_pos - 1;
 		double teu_per_h = vessel.cranes[index.crane].teu_per_h;
 		double cur_time = 0.0;
 		if (index.manner == 0) {
@@ -136,7 +136,7 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 			 */
 			if (l_bay < c_bay && c_bay < r_bay) {
 				MoveWork(prefix_batches[c_bay] - 1, index.l, teu_per_h, cur_time, ret);
-				Move(l_bay, c_bay + 1, cur_time, ret);
+				Move(l_bay, batch_pos[prefix_batches[c_bay]], cur_time, ret);
 				MoveWork(prefix_batches[c_bay], index.r, teu_per_h, cur_time, ret);
 			}
 		}
@@ -148,7 +148,7 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 			 */
 			if (l_bay < c_bay && c_bay < r_bay) {
 				MoveWork(prefix_batches[c_bay - 1], index.r, teu_per_h, cur_time, ret);
-				Move(r_bay, c_bay - 1, cur_time, ret);
+				Move(r_bay, batch_pos[prefix_batches[c_bay - 1] - 1], cur_time, ret);
 				MoveWork(prefix_batches[c_bay - 1] - 1, index.l, teu_per_h, cur_time, ret);
 			}
 		}
@@ -161,10 +161,8 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 			return INF;
 		return seq.actions.back().ed_time;
 	};
-	auto Clash = [&](const Index &lhs, const Index &rhs) -> bool {
+	auto Clash = [&](const WorkingSequence &lhs_seq, const WorkingSequence &rhs_seq) -> bool {
 		/* Return True if One Illegal */
-		WorkingSequence lhs_seq = GetDetailedPlan(lhs),
-						rhs_seq = GetDetailedPlan(rhs);
 		if (lhs_seq.actions.empty() || rhs_seq.actions.empty())
 			return true;
 		int safe_dist = vessel.crane_min_dist;
@@ -177,12 +175,26 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 		}
 		return false;
 	};
+	
+	fprintf(stderr, "Now Solving, cranes = %d, manners = %d, batches = %d\n", cranes, manners, batches);
+	for (int batch : batches_per_bay)
+		fprintf(stderr, "%d ", batch);
+	fprintf(stderr, "\n");
+	for (int c = 0; c < cranes; c ++)
+		for (int m = 0; m < manners; m ++)
+			for (int l = 0; l < batches; l ++)
+				for (int r = 0; r < batches; r ++)
+					Dp[c][m][l][r] = INF;
+	int tot_tasks = cranes * manners, finished = 0;
 	for (int c = 0; c < cranes; c ++)
 		for (int m = 0; m < manners; m ++) {
-			int l_st = c, l_ed = (c == 0 ? 0 : batches - c - 1);
-			for (int l = l_st; l <= l_ed; l ++)
-				for (int r = l; r < batches - c; r ++) {
+			int l_st = c, l_ed = (c == 0 ? 0 : batches - 1);
+			for (int l = l_st; l <= l_ed; l ++) {
+				for (int r = l; r < batches; r ++) {
 					Index cur_index = Index(crane_ord[c], m, l, r);
+					WorkingSequence cur_seq = GetDetailedPlan(cur_index);
+					if (cur_seq.actions.empty())
+						continue ;
 					double ti = Calc(cur_index);
 					if (c == 0)
 						Dp[c][m][l][r] = ti;
@@ -192,30 +204,41 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 						int &fa_pos = Fa[c][m][l][r].second;
 						min_val = INF, fa_manner = -1, fa_pos = -1;
 						
-						std::mutex mutex;
-						std::vector<std::thread> threads;
-						/* Using Static Parallel Strategy */
-						for (int tid = 0; tid < config.thread_count; tid ++)
-							threads.emplace_back([&]{
-								double t_min_val = INF, t_fa_manner = -1, t_fa_pos = -1;
-								for (int i = tid; i < l; i += config.thread_count)
-									for (int _m = 0; _m < DPConfig::kMannerCount; _m ++) {
-										if (Clash(Index(crane_ord[c - 1], _m, i, l - 1), cur_index))
-											continue ;
-										double tmp = std::max(Dp[c - 1][_m][i][l - 1], ti);
-										if (tmp < t_min_val)
-											t_min_val = tmp, t_fa_manner = _m, t_fa_pos = i;
-									}
-								std::lock_guard<std::mutex> lock(mutex);
-								if (t_min_val < min_val)
-									min_val = t_min_val, fa_manner = t_fa_manner, fa_pos = t_fa_pos;
-							});
-						for (std::thread &thread : threads)
-							thread.join();
+						for (int _m = 0; _m < DPConfig::kMannerCount; _m ++)
+							for (int i = l - 1; i >= 0; i --) {
+								WorkingSequence pre_seq = GetDetailedPlan(Index(crane_ord[c - 1], _m, i, l - 1));
+								if (pre_seq.actions.empty())
+									continue ;
+								if (pre_seq.actions.back().ed_time > min_val)
+									break ;
+								if (Clash(pre_seq, cur_seq))
+									continue ;
+								double tmp = std::max(Dp[c - 1][_m][i][l - 1], ti);
+								if (tmp < min_val)
+									min_val = tmp, fa_manner = _m, fa_pos = i;
+							}
 					}
 				}
+			}
+			fprintf(stderr, "Process : %d/%d\n", ++ finished, tot_tasks);
 		}
-	// TODO : Construct Woring Plan
+	double best_time = INF;
+	int crane = -1, manner = -1, l_pos = -1;
+	for (int c = 0; c < cranes; c ++)
+		for (int m = 0; m < manners; m ++) {
+			int l_st = c, l_ed = (c == 0 ? 0 : batches - 1);
+			for (int l = l_st; l <= l_ed; l ++)
+				if (Dp[c][m][l][batches - 1] < best_time)
+					best_time = Dp[c][m][l][batches - 1], crane = c, manner = m, l_pos = l;
+		}
+	fprintf(stderr, "Best Time = %.3fh\n", best_time);
 	CraneWorkingPlan plan;
+	plan.crane_seqs.resize(vessel.cranes.size());
+	for (int c = crane, m = manner, l = l_pos, r = batches - 1; c >= 0; c --) {
+		fprintf(stderr, "Crane %d : Do Batches [%d, %d] with Manner %d\n", crane_ord[c], l, r, m);
+		plan[crane_ord[c]] = GetDetailedPlan(Index(crane_ord[c], m, l, r));
+		int fa_m = Fa[c][m][l][r].first, fa_l = Fa[c][m][l][r].second;
+		m = fa_m, r = l - 1, l = fa_l;
+	}
 	return plan;
 }

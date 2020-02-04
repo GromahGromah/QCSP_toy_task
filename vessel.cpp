@@ -89,18 +89,80 @@ int Action::CraneMinDist(const Action &lhs, const Action &rhs) {
 	return ret;
 }
 
+void Action::Print(FILE * fout) const {
+	fprintf(fout, "%.3fh - %.3fh : ", bg_time, ed_time);
+	if (type == ActionType::Working) {
+		fprintf(fout, "Working at Bay-Pos %d with %d TEU(s)", w_detail.bay_pos + 1, w_detail.teus);
+	}
+	else {
+		fprintf(fout, "Moving from Bay-Pos %d to Bay-Pos %d", m_detail.st_bay + 1, m_detail.ed_bay + 1);
+	}
+	fprintf(fout, "\n");
+}
+
 Action &WorkingSequence::operator [](int id) {
 	return actions[id];
 }
 
-void WorkingSequence::MergeMovingActions() {
-	// TODO : Complete Code
+const Action &WorkingSequence::operator [](int id) const {
+	return actions[id];
 }
 
-void RemoveMovingActions() {
-	// TODO : Complete Code
+WorkingSequence WorkingSequence::GetMergeMovingActions() const {
+	WorkingSequence ret;
+	for (int l = 0, r; l < int(actions.size()); l = r) {
+		for (r = l; r < int(actions.size()) && actions[r].type == Action::ActionType::Moving; r ++) ;
+		if (l == r)
+			ret.actions.push_back(actions[r ++]);
+		else {
+			int st_bay = actions[l].m_detail.st_bay;
+			int ed_bay = actions[r - 1].m_detail.ed_bay;
+			double bg_time = actions[l].bg_time;
+			double ed_time = actions[r - 1].ed_time;
+			ret.actions.push_back(Action::Move(st_bay, ed_bay, bg_time, ed_time));
+		}
+	}
+	return ret;
 }
 
-WorkingSequence &CraneWorkingPlan::operator [](int id){
+WorkingSequence WorkingSequence::GetRemoveMovingActions() const {
+	WorkingSequence ret;
+	for (const Action &action : actions)
+		if (action.type == Action::ActionType::Working)
+			ret.actions.push_back(action);
+	return ret;
+}
+
+void WorkingSequence::Print(FILE * fout) const {
+	for (const Action &action : actions)
+		action.Print(fout);
+}
+
+WorkingSequence &CraneWorkingPlan::operator [](int id) {
 	return crane_seqs[id];
+}
+
+const WorkingSequence &CraneWorkingPlan::operator [](int id) const {
+	return crane_seqs[id];
+}
+
+CraneWorkingPlan CraneWorkingPlan::GetMergeMovingActions() const {
+	CraneWorkingPlan ret;
+	for (const WorkingSequence &seq : crane_seqs)
+		ret.crane_seqs.push_back(seq.GetMergeMovingActions());
+	return ret;
+}
+
+CraneWorkingPlan CraneWorkingPlan::GetRemoveMovingActions() const {
+	CraneWorkingPlan ret;
+	for (const WorkingSequence &seq : crane_seqs)
+		ret.crane_seqs.push_back(seq.GetRemoveMovingActions());
+	return ret;
+}
+
+void CraneWorkingPlan::Print(FILE * fout) const {
+	for (int c = 0; c < int(crane_seqs.size()); c ++) {
+		fprintf(fout, "----- Crane %d -----\n", c + 1);
+		crane_seqs[c].Print(fout);
+	}
 }
