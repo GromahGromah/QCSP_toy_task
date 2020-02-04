@@ -7,7 +7,7 @@ struct DPConfig {
 	static constexpr int kMaxCraneCount = 25;
 	static constexpr int kMaxBatchCount = 400;
 	static constexpr int kMannerCount = 4;
-	static constexpr int kDefaultBatchSize = 10;
+	static constexpr int kDefaultBatchSize = 25;
 	int batch_size;
 	DPConfig();
 	DPConfig(int batch_size);
