@@ -126,11 +126,11 @@ BayAction::BayAction(int crane, int teu, double bg_time, double ed_time)
 	: crane(crane), teu(teu), bg_time(bg_time), ed_time(ed_time) {
 }
 
-void BayAction::Load(FILE * fin) {
+void BayAction::Scan(FILE * fin) {
 	fscanf(fin, "%d%d%lf%lf", &crane, &teu, &bg_time, &ed_time);
 }
 
-void BayAction::Save(FILE * fout) const {
+void BayAction::Print(FILE * fout) const {
 	fprintf(fout, "%d %d %.3f %.3f\n", crane, teu, bg_time, ed_time);
 }
 
@@ -142,18 +142,18 @@ const BayAction &BaySequence::operator [](int id) const {
 	return actions[id];
 }
 
-void BaySequence::Load(FILE * fin) {
+void BaySequence::Scan(FILE * fin) {
 	int cnt;
 	scanf("%d", &cnt);
 	actions.resize(cnt);
 	for (BayAction &action : actions)
-		action.Load(fin);
+		action.Scan(fin);
 }
 
-void BaySequence::Save(FILE * fout) const {
+void BaySequence::Print(FILE * fout) const {
 	fprintf(fout, "%d\n", int(actions.size()));
 	for (const BayAction &action : actions)
-		action.Save(fout);
+		action.Print(fout);
 }
 
 BaySequence &BayPlan::operator [](int id) {
@@ -185,17 +185,17 @@ BayPlan BayPlan::ExtractBayPlan(const Vessel &vessel, const CraneWorkingPlan &cr
 	return ret;
 }
 
-void BayPlan::Load(FILE * fin) {
+void BayPlan::Scan(FILE * fin) {
 	int bays;
 	scanf("%d", &bays);
 	bay_seqs.resize(bays);
 	for (BaySequence &seq : bay_seqs)
-		seq.Load(fin);
+		seq.Scan(fin);
 }
 
-void BayPlan::Save(FILE * fout) const {
+void BayPlan::Print(FILE * fout) const {
 	fprintf(fout, "%d\n", int(bay_seqs.size()));
 	for (const BaySequence &seq : bay_seqs)
-		seq.Save(fout);
+		seq.Print(fout);
 }
 

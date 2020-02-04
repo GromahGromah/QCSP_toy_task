@@ -56,16 +56,16 @@ struct BayAction {
 	double ed_time;
 	BayAction() = default;
 	BayAction(int crane, int teu, double bg_time, double ed_time);
-	void Load(FILE * fin);
-	void Save(FILE * fout) const;
+	void Scan(FILE * fin);
+	void Print(FILE * fout) const;
 };
 
 struct BaySequence {
 	std::vector<BayAction> actions;
 	BayAction &operator [](int id);
 	const BayAction &operator [](int id) const;
-	void Load(FILE * fin);
-	void Save(FILE * fout) const;
+	void Scan(FILE * fin);
+	void Print(FILE * fout) const;
 };
 
 struct BayPlan {
@@ -73,8 +73,8 @@ struct BayPlan {
 	BaySequence &operator [](int id);
 	const BaySequence &operator [](int id) const;
 	static BayPlan ExtractBayPlan(const Vessel &vessel, const CraneWorkingPlan &crane_plan);
-	void Load(FILE * fin);
-	void Save(FILE * fout) const;
+	void Scan(FILE * fin);
+	void Print(FILE * fout) const;
 };
 
 #endif /* PLAN_H */

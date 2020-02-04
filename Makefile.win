@@ -4,8 +4,8 @@
 CPP      = g++.exe -D__DEBUG__
 CC       = gcc.exe -D__DEBUG__
 WINDRES  = windres.exe
-OBJ      = main.o vessel.o algo.o plan.o
-LINKOBJ  = main.o vessel.o algo.o plan.o
+OBJ      = algo.o main.o plan.o vessel.o
+LINKOBJ  = algo.o main.o plan.o vessel.o
 LIBS     = -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/lib" -L"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libstdc++ -static-libgcc -g3
 INCS     = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include"
 CXXINCS  = -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/include" -I"C:/Program Files (x86)/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include"
@@ -24,14 +24,14 @@ clean: clean-custom
 $(BIN): $(OBJ)
 	$(CPP) $(LINKOBJ) -o $(BIN) $(LIBS)
 
-main.o: main.cpp
-	$(CPP) -c main.cpp -o main.o $(CXXFLAGS)
-
-vessel.o: vessel.cpp
-	$(CPP) -c vessel.cpp -o vessel.o $(CXXFLAGS)
-
 algo.o: algo.cpp
 	$(CPP) -c algo.cpp -o algo.o $(CXXFLAGS)
 
+main.o: main.cpp
+	$(CPP) -c main.cpp -o main.o $(CXXFLAGS)
+
 plan.o: plan.cpp
 	$(CPP) -c plan.cpp -o plan.o $(CXXFLAGS)
+
+vessel.o: vessel.cpp
+	$(CPP) -c vessel.cpp -o vessel.o $(CXXFLAGS)

@@ -12,6 +12,6 @@ int main()
 	plan.Print();
 	BayPlan bay_plan = BayPlan::ExtractBayPlan(vessel, plan);
 	FILE * fout = fopen("bay_plan.txt", "w");
-	bay_plan.Save(fout);
+	bay_plan.Print(fout);
 	return 0;
 }
