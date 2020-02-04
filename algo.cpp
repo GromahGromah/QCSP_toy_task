@@ -10,11 +10,11 @@
 #define INF 1e30
 
 DPConfig::DPConfig()
-	: DPConfig(10, 1) {
+	: DPConfig(kDefaultBatchSize) {
 }
 
-DPConfig::DPConfig(int batch_size, int thread_count)
-	: batch_size(batch_size), thread_count(thread_count) {
+DPConfig::DPConfig(int batch_size)
+	: batch_size(batch_size) {
 }
 
 static inline int CeilDiv(int lhs, int rhs) {

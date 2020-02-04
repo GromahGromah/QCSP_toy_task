@@ -7,10 +7,10 @@ struct DPConfig {
 	static constexpr int kMaxCraneCount = 25;
 	static constexpr int kMaxBatchCount = 400;
 	static constexpr int kMannerCount = 4;
+	static constexpr int kDefaultBatchSize = 10;
 	int batch_size;
-	int thread_count;
 	DPConfig();
-	DPConfig(int batch_size, int thread_count);
+	DPConfig(int batch_size);
 };
 
 CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config = DPConfig());
