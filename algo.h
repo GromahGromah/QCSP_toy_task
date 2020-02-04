@@ -1,6 +1,7 @@
 #ifndef ALGO_H
 #define ALGO_H
 
+#include "plan.h"
 #include "vessel.h"
 
 struct DPConfig {
