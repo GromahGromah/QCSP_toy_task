@@ -59,7 +59,7 @@ def PaintAxis(X, Y):
 		turtle.pendown()
 		turtle.goto(-0.1, -i)
 		turtle.penup()
-		turtle.goto(-0.6, -i - 0.25)
+		turtle.goto(-0.6, -i - 0.22)
 		turtle.pendown()
 		turtle.write(str(i) + 'h')
 		
