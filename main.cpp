@@ -3,6 +3,7 @@
 #include "plan.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <algorithm>
 
 int main()
@@ -13,5 +14,7 @@ int main()
 	BayPlan bay_plan = BayPlan::ExtractBayPlan(vessel, plan);
 	FILE * fout = fopen("bay_plan.txt", "w");
 	bay_plan.Print(fout);
+	fclose(fout);
+	system("python draw.py bay_plan.txt");
 	return 0;
 }
