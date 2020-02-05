@@ -92,7 +92,7 @@ turtle.penup()
 turtle.goto(0, -max_time)
 turtle.pendown()
 turtle.goto(bays, -max_time)
-turtle.goto(bays - 3, -max_time)
+turtle.goto(bays * (5.0 / 6.0), -max_time)
 turtle.write('max time : ' + str(max_time) + 'h')
 
 turtle.penup()
