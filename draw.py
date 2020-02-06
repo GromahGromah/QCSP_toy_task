@@ -49,7 +49,8 @@ def PaintAxis(X, Y):
 	turtle.fd(X)
 	for i in range(X):
 		turtle.goto(i + 0.25, 0)
-		turtle.write(bay_teu[i])
+		if bay_teu[i] != 0:
+			turtle.write(bay_teu[i])
 	turtle.goto(0, 0)
 	turtle.right(90)
 	turtle.fd(Y)
