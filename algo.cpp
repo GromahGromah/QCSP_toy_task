@@ -10,7 +10,11 @@
 #define INF 1e30
 
 DPConfig::DPConfig()
-	: DPConfig(kDefaultBatchSize, kDefaultThreadCount) {
+	: DPConfig(kDefaultBatchSize) {
+}
+
+DPConfig::DPConfig(int batch_size)
+	: DPConfig(batch_size, kDefaultThreadCount) {
 }
 
 DPConfig::DPConfig(int batch_size, int thread_count)
