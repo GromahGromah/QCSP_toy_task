@@ -10,11 +10,11 @@
 #define INF 1e30
 
 DPConfig::DPConfig()
-	: DPConfig(kDefaultBatchSize) {
+	: DPConfig(kDefaultBatchSize, kDefaultThreadCount) {
 }
 
-DPConfig::DPConfig(int batch_size)
-	: batch_size(batch_size) {
+DPConfig::DPConfig(int batch_size, int thread_count)
+	: batch_size(batch_size), thread_count(thread_count) {
 }
 
 static inline int CeilDiv(int lhs, int rhs) {
@@ -24,6 +24,7 @@ static inline int CeilDiv(int lhs, int rhs) {
 CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 	/* Initialize */
 	int batch_sz = std::max(config.batch_size, CeilDiv(vessel.GetTotalTEU(), DPConfig::kMaxBatchCount));
+	int thread_cnt = config.thread_count;
 	int cranes = int(vessel.cranes.size());
 	int batches = 0;
 	int manners = DPConfig::kMannerCount;
@@ -204,19 +205,50 @@ CraneWorkingPlan DPSolve(const Vessel &vessel, const DPConfig &config) {
 						int &fa_pos = Fa[c][m][l][r].second;
 						min_val = INF, fa_manner = -1, fa_pos = -1;
 						
-						for (int _m = 0; _m < DPConfig::kMannerCount; _m ++)
-							for (int i = l - 1; i >= 0; i --) {
-								WorkingSequence pre_seq = GetDetailedPlan(Index(crane_ord[c - 1], _m, i, l - 1));
-								if (pre_seq.actions.empty())
-									continue ;
-								if (pre_seq.actions.back().ed_time > min_val)
-									break ;
-								if (Clash(pre_seq, cur_seq))
-									continue ;
-								double tmp = std::max(Dp[c - 1][_m][i][l - 1], ti);
-								if (tmp < min_val)
+						if (thread_cnt == 1) {
+							for (int _m = 0; _m < DPConfig::kMannerCount; _m ++)
+								for (int i = l - 1; i >= 0; i --) {
+									double tmp = std::max(Dp[c - 1][_m][i][l - 1], ti);
+									if (tmp >= min_val)
+										continue;
+									WorkingSequence pre_seq = GetDetailedPlan(Index(crane_ord[c - 1], _m, i, l - 1));
+									if (pre_seq.actions.empty())
+										continue ;
+									if (pre_seq.actions.back().ed_time > min_val)
+										break ;
+									if (Clash(pre_seq, cur_seq))
+										continue ;
 									min_val = tmp, fa_manner = _m, fa_pos = i;
+								}
+						}
+						else {
+							std::vector<std::thread> threads;
+							std::mutex mutex;
+							int tot_iter = DPConfig::kMannerCount * l;
+							for (int t_id = 0; t_id < thread_cnt; t_id ++) {
+								threads.emplace_back([&, t_id] {
+									double t_min_val = INF;
+									int t_fa_manner = -1, t_fa_pos = -1;
+									for (int t = t_id; t < tot_iter; t += thread_cnt) {
+										int _m = t / l, i = t - _m * l;
+										double tmp = std::max(Dp[c - 1][_m][i][l - 1], ti);
+										if (tmp >= t_min_val)
+											continue;
+										WorkingSequence pre_seq = GetDetailedPlan(Index(crane_ord[c - 1], _m, i, l - 1));
+										if (pre_seq.actions.empty() || Clash(pre_seq, cur_seq))
+											continue ;
+										t_min_val = tmp, t_fa_manner = _m, t_fa_pos = i;
+									}
+									{
+										std::lock_guard<std::mutex> lock(mutex);
+										if (t_min_val < min_val)
+											std::tie(min_val, fa_manner, fa_pos) = std::tie(t_min_val, t_fa_manner, t_fa_pos);
+									}
+								});
 							}
+							for (std::thread &thread : threads)
+								thread.join();
+						}
 					}
 				}
 			}
